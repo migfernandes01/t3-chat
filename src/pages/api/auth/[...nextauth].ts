@@ -1,5 +1,5 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
+import CredentialsProvider from "next-auth/providers/credentials";
 // Prisma adapter for NextAuth, optional and can be removed
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 
@@ -19,9 +19,19 @@ export const authOptions: NextAuthOptions = {
   // Configure one or more authentication providers
   adapter: PrismaAdapter(prisma),
   providers: [
-    DiscordProvider({
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        name: {
+          label: "Name",
+          type: "text",
+          placeholder: "Enter your name",
+        },
+      },
+      async authorize(credentials, _req) {
+        const user = { id: 1, name: credentials?.name ?? "J Smith" };
+        return user;
+      },
     }),
     /**
      * ...add more providers here
@@ -33,6 +43,12 @@ export const authOptions: NextAuthOptions = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
+  // load auth secret from env vars
+  secret: env.NEXTAUTH_SECRET,
+  // session using jwt
+  session: {
+    strategy: "jwt",
+  },
 };
 
 export default NextAuth(authOptions);
