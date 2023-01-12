@@ -12,17 +12,21 @@ import superjson from "superjson";
 
 import { type AppRouter } from "../server/api/root";
 
+// returns base web socket url
 const getBaseUrl = () => {
-  if (typeof window !== "undefined") return ""; // browser should use relative url
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`; // SSR should use vercel url
-  return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
+  if (typeof window !== "undefined") {
+    return ""; // browser should use relative url
+  } else {
+    // localhost for dev, load url for prod from env vars
+    return process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3011";
+  }
 };
 
 /**
  * A set of typesafe react-query hooks for your tRPC API
  */
 export const api = createTRPCNext<AppRouter>({
-  config() {
+  config({ ctx }) {
     return {
       /**
        * Transformer used for data de-serialization from the server
@@ -44,6 +48,17 @@ export const api = createTRPCNext<AppRouter>({
           url: `${getBaseUrl()}/api/trpc`,
         }),
       ],
+
+      // return req headers if existent, empty object otherwise
+      headers() {
+        if (ctx?.req) {
+          return {
+            ...ctx.req.headers,
+          };
+        } else {
+          return {};
+        }
+      },
     };
   },
   /**
