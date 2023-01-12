@@ -16,6 +16,7 @@
  * processing a request
  *
  */
+import type ws from "ws";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type Session } from "next-auth";
 
@@ -36,9 +37,13 @@ type CreateContextOptions = {
  * @see https://create.t3.gg/en/usage/trpc#-servertrpccontextts
  */
 const createInnerTRPCContext = (opts: CreateContextOptions) => {
+  // have an event emitter as trpc server context (accessible inside any trpc enpoint)
+  const eventEmitter = new EventEmitter();
+
   return {
     session: opts.session,
     prisma,
+    eventEmitter,
   };
 };
 
@@ -47,7 +52,11 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  * process every request that goes through your tRPC endpoint
  * @link https://trpc.io/docs/context
  */
-export const createTRPCContext = async (opts: CreateNextContextOptions) => {
+export const createTRPCContext = async (
+  opts:
+    | CreateNextContextOptions
+    | NodeHTTPCreateContextFnOptions<IncomingMessage, ws>
+) => {
   const { req, res } = opts;
 
   // Get the session from the server using the unstable_getServerSession wrapper function
@@ -66,6 +75,9 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
  */
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+import EventEmitter from "events";
+import type { NodeHTTPCreateContextFnOptions } from "@trpc/server/dist/adapters/node-http";
+import type { IncomingMessage } from "http";
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,

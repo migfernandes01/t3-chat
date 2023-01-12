@@ -1,2 +1,2 @@
 dev:
-	yarn run next dev
+	yarn run dev
