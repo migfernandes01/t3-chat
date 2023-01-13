@@ -17,10 +17,10 @@
  *
  */
 import type ws from "ws";
-import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type Session } from "next-auth";
 
-import { getServerAuthSession } from "../auth";
+import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
+
 import { prisma } from "../db";
 
 type CreateContextOptions = {
@@ -57,10 +57,10 @@ export const createTRPCContext = async (
     | CreateNextContextOptions
     | NodeHTTPCreateContextFnOptions<IncomingMessage, ws>
 ) => {
-  const { req, res } = opts;
+  const { req } = opts;
 
   // Get the session from the server using the unstable_getServerSession wrapper function
-  const session = await getServerAuthSession({ req, res });
+  const session = await getSession({ req });
 
   return createInnerTRPCContext({
     session,
@@ -78,6 +78,12 @@ import superjson from "superjson";
 import EventEmitter from "events";
 import type { NodeHTTPCreateContextFnOptions } from "@trpc/server/dist/adapters/node-http";
 import type { IncomingMessage } from "http";
+import { getSession } from "next-auth/react";
+import fetch from "node-fetch";
+
+if (!global.fetch) {
+  (global.fetch as any) = fetch;
+}
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,

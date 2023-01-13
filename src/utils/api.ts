@@ -5,22 +5,31 @@
  *
  * We also create a few inference helpers for input and output types
  */
-import { httpBatchLink, loggerLink } from "@trpc/client";
+import {
+  createWSClient,
+  httpBatchLink,
+  loggerLink,
+  wsLink,
+} from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import superjson from "superjson";
 
 import { type AppRouter } from "../server/api/root";
 
-// returns base web socket url
-const getBaseUrl = () => {
-  if (typeof window !== "undefined") {
-    return ""; // browser should use relative url
-  } else {
-    // localhost for dev, load url for prod from env vars
-    return process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+function getEndingLink() {
+  if (typeof window === "undefined") {
+    return httpBatchLink({
+      url: "http://localhost:3000/api/trpc",
+    });
   }
-};
+  const client = createWSClient({
+    url: "ws://localhost:3001",
+  });
+  return wsLink<AppRouter>({
+    client,
+  });
+}
 
 /**
  * A set of typesafe react-query hooks for your tRPC API
@@ -44,9 +53,7 @@ export const api = createTRPCNext<AppRouter>({
             process.env.NODE_ENV === "development" ||
             (opts.direction === "down" && opts.result instanceof Error),
         }),
-        httpBatchLink({
-          url: `${getBaseUrl()}/api/trpc`,
-        }),
+        getEndingLink(),
       ],
 
       // return req headers if existent, empty object otherwise

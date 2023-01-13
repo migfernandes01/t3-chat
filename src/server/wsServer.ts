@@ -22,7 +22,7 @@ const handler = applyWSSHandler({
 wss.on("connection", () => {
   console.log(`++ ws connection ${wss.clients.size}`);
 
-  wss.on("close", () => {
+  wss.once("close", () => {
     console.log(`-- ws connection ${wss.clients.size}`);
   });
 });
